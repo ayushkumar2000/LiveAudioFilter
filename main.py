@@ -3,6 +3,8 @@ import wave
 import numpy as np
 import matplotlib.pyplot as plt
 import struct
+import scipy
+import math
 import sys
 def record():
     chunk = 1024 
@@ -74,13 +76,14 @@ def play(filename):
                     output = True)
     rd_data = af.readframes(chunk)
     frames_tot=[]
-    for i in range(0,10000):
+    for i in range(0,70):
         # stream.write(rd_data)
         rd_data = af.readframes(chunk)
         frames_tot.append(rd_data)
     stream.stop_stream()
     stream.close()
     pa.terminate()
+    # print(len(b''.join(frames_tot)))
     return b''.join(frames_tot)
 
 def play_frames(frames): 
@@ -113,7 +116,8 @@ def window_avg(arr,size):
         res.append(sum(arr[curr:curr+size])/len(arr[curr:curr+size]))
         curr+=1
     return res
-
+def np2(x):  
+    return 1 if x == 0 else 2**(x - 1).bit_length()
 
 def run_live_filter():
     chunk = 1024 
@@ -167,53 +171,75 @@ def run_live_filter():
     stream2.close()
     pa.terminate()
 
-def run_live_filter2():
-    chunk = 1024 
-    sample_format = pyaudio.paInt16 
-    chanels = 1
-    smpl_rt = 44100
-    seconds = 4
-    filename = "audio_files/recording1.wav"
+def run_file_filter():
     pa = pyaudio.PyAudio() 
-    stream1 = pa.open(format=sample_format, channels=chanels,
-                    rate=smpl_rt, input=True,
-                    frames_per_buffer=chunk)
-    stream2 = pa.open(format = pyaudio.paInt16,
+    fs = 22050
+    stream = pa.open(format = pyaudio.paInt16,
                     channels = 1,
                     rate = 22050,
                     output = True)
-    
-    print('Recording...')
-    frames = []
-    for i in range(0, 1):
-        #process data to the integer
+    for k in range(0, 1):
+        #process data to the integer samples load it into final_arr
         final_arr = [int(i) for i in play('audio_files/CantinaBand3.wav')]
-        print('finished reading')
-        #do the fft and other operations on the final_arr
+        print('finished reading from file')
+        
+        # #first making the signal zero mean
+        mean_final_arr = sum(final_arr)/len(final_arr)
+        final_arr = [i - mean_final_arr for i in final_arr]
+
+
+        #plot the actual signal
         final_arr1 = np.array(final_arr)
-        plt.plot(np.arange(final_arr1.shape[-1]),final_arr1.real,np.arange(final_arr1.shape[-1]),final_arr1.imag)
+        # plt.plot(np.arange(final_arr1.shape[-1]),final_arr1.real,np.arange(final_arr1.shape[-1]),final_arr1.imag)
+        # plt.show()
+        
+        
+        
+        #do the fft and other operations on the final_arr
+        
+        final_arr_fft = np.fft.rfft(final_arr,np2(len(final_arr)))
+        # final_arr_fft_shifted = np.fft.fftshift(final_arr_fft)
+        freqs = np.fft.fftfreq(n=len(final_arr_fft),d = 1/(fs))
+        final_arr_fft_pos =  final_arr_fft[:int(len(final_arr_fft)/2)+1]
+
+        #the fft results
+        # plt.plot(freqs,np.abs(final_arr_fft_shifted))
+        # plt.show()
+        plt.plot(freqs[freqs>=0],np.abs(final_arr_fft_pos))
         plt.show()
-        final_arr_fft = np.fft.rfft(final_arr)
-        plt.plot(np.arange(final_arr_fft.shape[-1]),final_arr_fft.real,np.arange(final_arr_fft.shape[-1]),final_arr_fft.imag)
-        plt.show()
-        low_pass = np.concatenate( (np.ones((10000,)), np.zeros((final_arr_fft.shape[-1]-10000,))))
+
+
+        #filters
+        low_pass = np.concatenate( (np.ones((len(final_arr_fft)//4,)), np.zeros((final_arr_fft.shape[-1]-len(final_arr_fft)//4,))))
+        high_pass = np.concatenate( (np.zeros((1000,)), np.ones((final_arr_fft.shape[-1]-1000,))))
+
+        # plt.plot(freqs[freqs>=0],np.abs(final_arr_fft_pos*low_pass))
+        # plt.show()
+        
+        # low_pass = np.concatenate( (np.ones((50000,)), np.zeros((final_arr_fft.shape[-1]-50000,))))
         
         final_arr2 = np.fft.irfft(final_arr_fft*low_pass).round().astype(np.int16)
+
         plt.plot(np.arange(final_arr2.shape[-1]),final_arr2.real,np.arange(final_arr2.shape[-1]),final_arr2.imag)
         plt.show()
-        # final_arr2 += np.abs(np.min(final_arr2))
+
+        #adjusting result of filter to make it between (0,255)
+        final_arr2 += np.abs(np.min(final_arr2))
         mx, mn = np.max(final_arr2), np.min(final_arr2)
-        final_arr2 = (final_arr2 - mn) #// (mx-mn)
-        final_arr2 = np.clip(final_arr2,0,255)
+        final_arr2 = (final_arr2)/mx
+        final_arr2 *=255
+        final_arr2 = final_arr2.round().astype(np.int16)
+        plt.plot(np.arange(final_arr2.shape[-1]),final_arr2.real,np.arange(final_arr2.shape[-1]),final_arr2.imag)
+        plt.show()
+        # final_arr2 = np.clip(final_arr2,0,255)
+        
+        
         #pack back to frames to play it    
         bin_final = bytes(list(final_arr2))
-        stream2.write(bin_final)
+        stream.write(bin_final)
         
-
-    stream1.stop_stream()
-    stream1.close()
-    stream2.stop_stream()
-    stream2.close()
+    stream.stop_stream()
+    stream.close()
     pa.terminate()
 
 
@@ -221,33 +247,4 @@ def run_live_filter2():
 
 if(__name__ == "__main__"): 
     # record()
-    run_live_filter2()
-    sys.exit(0)
-    
-    frames1 = record()
-    linear_arr = b''.join(frames1)
-    count1 = 0
-    # final_arr = window_avg(linear_arr,int(10))
-    # mean_arr = sum(linear_arr)/len(linear_arr)
-    #print(linear_arr,file = open('testfile2.txt','w'))
-    final_arr = []
-    for i in linear_arr:
-        final_arr.append(int(i))
-    # final_arr = [i-mean_arr for i in linear_arr]
-    
-    plt.plot(final_arr)
-    plt.show()
-    # plt.plot(np.fft.fft(final_arr))
-    # plt.show()
-    print(len(final_arr))
-    #pack back to frames to play it    
-    bin_final = bytes(final_arr)
-    
-    # for val in final_arr:
-    #     bin_final += struct.pack('<H',val)
-    play_fr(bin_final)
-
-
-
-
-# play_frames(frames1)
+    run_file_filter()
