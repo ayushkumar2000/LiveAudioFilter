@@ -6,6 +6,15 @@ import struct
 import scipy
 import math
 import sys
+
+'''
+TODO: 
+1. Low pass filter symmetric
+2. Coefficient based filters
+3. Subplots
+'''
+
+
 def record():
     chunk = 1024 
     sample_format = pyaudio.paInt16 
@@ -210,9 +219,11 @@ def run_file_filter():
 
 
         #filters
-        low_pass = np.concatenate( (np.ones((len(final_arr_fft)//4,)), np.zeros((final_arr_fft.shape[-1]-len(final_arr_fft)//4,))))
+        len_ones = len(final_arr_fft)//4
+        len_zeros = len(final_arr_fft) - 2*len_ones
+        # low_pass = np.concatenate( (np.ones((len(final_arr_fft)//4,)), np.zeros((final_arr_fft.shape[-1]-len(final_arr_fft)//4,))))
         high_pass = np.concatenate( (np.zeros((1000,)), np.ones((final_arr_fft.shape[-1]-1000,))))
-
+        low_pass = np.concatenate((np.ones(len_ones),np.zeros(len_zeros),np.ones(len_ones)))
         # plt.plot(freqs[freqs>=0],np.abs(final_arr_fft_pos*low_pass))
         # plt.show()
         
