@@ -3,17 +3,18 @@ import pyaudio
 import numpy as np
 import math
 import wave
+import filter as ft
 import matplotlib.pyplot as plt
 from scipy.io import wavfile as wav
 
 def scale_255(samples):
     samples = samples.astype(np.int16)
-    # if(np.min(samples) < 0):
-    #     samples -= np.min(samples)
-    # if(np.max(samples)>256):
-    #     samples = samples/np.max(samples)
-    #     samples *= 255
-    #     samples = samples.round().astype(np.int16)
+    if(np.min(samples) < 0):
+        samples -= np.min(samples)
+    if(np.max(samples)>255):
+        samples = samples/np.max(samples)
+        samples *= 255
+        samples = samples.round().astype(np.int16)
     return samples
 
 
@@ -41,11 +42,13 @@ def play(samples,samp_rate,save_file=False):
                     rate = samp_rate,
                     output = True)
     samples = np.array(scale_255(samples))
-    bin_final = samples.tobytes()
+    
     if(not save_file):
+        bin_final = bytes(list(samples))
         stream.write(bin_final)
     else:
         filename = 'audio_files/freqgen.wav'
+        bin_final = samples.tobytes()
         sf = wave.open(filename, 'wb')
         sf.setnchannels(1)
         sf.setsampwidth(pa.get_sample_size(pyaudio.paInt16))
@@ -65,7 +68,7 @@ def low_pass_filter(samples,fc,fs,plot_g = False):
     
     low_pass_samples_fft = []
     for i in range(0,len(samples_fft)):
-        if(abs(freqs[i])>=fc):
+        if(abs(freqs[i])<=fc):
             low_pass_samples_fft.append(samples_fft[i])
         else:
             low_pass_samples_fft.append(0)
@@ -89,9 +92,12 @@ if(__name__ == "__main__"):
     fs = 22050
     freqs = np.fft.fftfreq(n=len(f_gen([200,400,2000,2300],fs)),d = 1/(fs))
     samples =f_gen([200,400,2000,2300],fs) 
-    fs,samples = file_samples('audio_files/recording1.wav')
-
+    fs,samples = file_samples('audio_files/CantinaBand3.wav')
+    plt.plot(samples[:1000])
+    plt.show()
     
-    low_pass_samples = low_pass_filter(samples,10000,fs)
-    play(low_pass_samples,fs,True)
+    # low_pass_samples = low_pass_filter(samples,10000,fs,True)
+    butter_samples = ft.butterworth(samples,4,0.1)
+    # play(low_pass_samples,fs,True)
+    play(butter_samples,fs,True)
     # play(scale_255(f_gen([200,400,2000,2300],22050)),22050)

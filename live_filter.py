@@ -7,9 +7,10 @@ import scipy
 import math
 from scipy.io import wavfile as wav
 import freq_gen as fg
+import filter as ft
 
 def live_run(seconds):
-    chunk = 220500
+    chunk = int(220500/2)
     sample_format = pyaudio.paInt16 
     chanels = 1
     fs = 22050
@@ -31,10 +32,9 @@ def live_run(seconds):
         for i in data:
             samples.append(int(i))
         samples = np.array(samples).astype(np.int16)
-        filtered_samples = fg.low_pass_filter(samples,1000,fs)
-        filtered_samples = np.array(fg.scale_255(filtered_samples))
+        filtered_samples = ft.butterworth(samples,4,0.1)
         filtered_samples = fg.scale_255(filtered_samples)
-        fg.play(samples,fs,True)
+        fg.play(filtered_samples,fs)
         # bin_final = bytes(list(filtered_samples))      
         # stream2.write(bin_final)
         
