@@ -9,7 +9,7 @@ from scipy.io import wavfile as wav
 import freq_gen as fg
 import filter as ft
 
-def live_run(seconds):
+def live_run(seconds,save_file = False):
     chunk = int(220500/2)
     sample_format = pyaudio.paInt16 
     chanels = 1
@@ -22,26 +22,59 @@ def live_run(seconds):
                     channels = 1,
                     rate = fs,
                     output = True)
-    
-    print('Recording...')
+    tot_samples = np.array([])
+    tot_filtered_samples = np.array([])
 
-    for i in range(seconds*10):
+    #first find the filter to run
+    filter_num,arg_list = ft.filter_finder()
+    #visualize the filter
+    ft.visualize_filter(filter_num,arg_list)
+
+    print('Recording...')
+    for i in range(int(seconds/5)):
         data = stream1.read(chunk)
         #process data to the integer
         samples = []
-        for i in data:
-            samples.append(int(i))
-        samples = np.array(samples).astype(np.int16)
-        filtered_samples = ft.butterworth(samples,4,0.1)
-        filtered_samples = fg.scale_255(filtered_samples)
-        fg.play(filtered_samples,fs)
-        # bin_final = bytes(list(filtered_samples))      
-        # stream2.write(bin_final)
+
+        samples = np.frombuffer(data, dtype='int16')
+
+        #filter the samples
+        # filtered_samples = samples
+        filtered_samples = ft.filter_runner(samples,filter_num,arg_list)
         
+        
+        #save the filtered samples into output.wav
+        # fg.play(filtered_samples,fs,True)
+        #play the output.wav file
+        # fs,final_samples = fg.file_samples('audio_files/output.wav')
+
+        
+        #
+        filtered_samples = filtered_samples.astype(np.int16)
+        if(not save_file):
+            stream2.write(filtered_samples.tobytes())
+        else:
+            tot_samples = np.append(tot_samples,samples)
+
+    
+    if(save_file):
+        tot_filtered_samples = ft.filter_runner(tot_samples,filter_num,arg_list)
+        fg.play(tot_samples,fs,True,'audio_files/original.wav')
+        fg.play(tot_filtered_samples,fs,True,'audio_files/filtered.wav')
+
+
+
     stream1.stop_stream()
     stream1.close()
     stream2.stop_stream()
     stream2.close()
     pa.terminate()
 
-live_run(10)
+
+
+# def record(seconds):
+
+save_file = False
+save_file = input('Enter "yes" to save the recording and filtered recording or "no" to run a live filter\n') == 'yes'
+print(save_file)
+live_run(10,save_file)

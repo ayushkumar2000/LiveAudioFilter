@@ -35,19 +35,22 @@ def f_gen(freq,samp_rate):
 
 
 
-def play(samples,samp_rate,save_file=False):
-    pa = pyaudio.PyAudio()
-    stream = pa.open(format = pyaudio.paInt16,
+def play(samples,samp_rate,save_file=False,filename = 'audio_files/output.wav'):
+    pa = pyaudio.PyAudio()    
+    if(not save_file):
+        stream = pa.open(format = pyaudio.paInt16,
                     channels = 1,
                     rate = samp_rate,
                     output = True)
-    samples = np.array(scale_255(samples))
-    
-    if(not save_file):
+        samples = np.array(scale_255(samples))
         bin_final = bytes(list(samples))
         stream.write(bin_final)
+        stream.stop_stream()
+        stream.close()
+        pa.terminate()
+    
     else:
-        filename = 'audio_files/freqgen.wav'
+        samples = samples.astype(np.int16)
         bin_final = samples.tobytes()
         sf = wave.open(filename, 'wb')
         sf.setnchannels(1)
@@ -55,9 +58,6 @@ def play(samples,samp_rate,save_file=False):
         sf.setframerate(samp_rate)
         sf.writeframes(bin_final)
         sf.close()
-    stream.stop_stream()
-    stream.close()
-    pa.terminate()
     
 
 
@@ -79,9 +79,9 @@ def low_pass_filter(samples,fc,fs,plot_g = False):
         plt.show()
         plt.plot(freqs,abs(low_pass_samples_fft))
         plt.show()
-    return np.fft.ifft(low_pass_samples_fft)
+    return np.fft.ifft(low_pass_samples_fft).real
 
-def file_samples(filename):
+def file_samples(filename): 
     rate, data = wav.read(filename)
     return rate,data
 
@@ -99,5 +99,5 @@ if(__name__ == "__main__"):
     # low_pass_samples = low_pass_filter(samples,10000,fs,True)
     butter_samples = ft.butterworth(samples,4,0.1)
     # play(low_pass_samples,fs,True)
-    play(butter_samples,fs,True)
+    # play(butter_samples,fs,True)
     # play(scale_255(f_gen([200,400,2000,2300],22050)),22050)
