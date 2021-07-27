@@ -1,11 +1,7 @@
 import pyaudio
-import wave
 import numpy as np
 import matplotlib.pyplot as plt
-import struct
-import scipy
 from math import ceil
-from scipy.io import wavfile as wav
 import freq_gen as fg
 import filter as ft
 
