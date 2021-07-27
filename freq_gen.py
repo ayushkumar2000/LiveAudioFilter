@@ -61,25 +61,6 @@ def play(samples,samp_rate,save_file=False,filename = 'audio_files/output.wav'):
     
 
 
-def low_pass_filter(samples,fc,fs,plot_g = False):
-    freqs = np.fft.fftfreq(n=len(samples),d = 1/(fs))
-
-    samples_fft = np.fft.fft(samples)
-    
-    low_pass_samples_fft = []
-    for i in range(0,len(samples_fft)):
-        if(abs(freqs[i])<=fc):
-            low_pass_samples_fft.append(samples_fft[i])
-        else:
-            low_pass_samples_fft.append(0)
-    low_pass_samples_fft = np.array(low_pass_samples_fft)
-
-    if(plot_g):
-        plt.plot(freqs,abs(samples_fft))
-        plt.show()
-        plt.plot(freqs,abs(low_pass_samples_fft))
-        plt.show()
-    return np.fft.ifft(low_pass_samples_fft).real
 
 def file_samples(filename): 
     rate, data = wav.read(filename)
@@ -90,13 +71,19 @@ def file_samples(filename):
 if(__name__ == "__main__"):
     fs = 22050
     freqs = np.fft.fftfreq(n=len(f_gen([200,400,2000,2300],fs)),d = 1/(fs))
-    samples =f_gen([200,400,2000,2300],fs) 
-    fs,samples = file_samples('audio_files/CantinaBand3.wav')
-    plt.plot(samples[:1000])
+    samples =f_gen([200],fs) 
+    noise = 255*np.random.normal(0, .2, samples.shape)
+    sample_noise = samples+noise
+    # fs,samples = file_samples('audio_files/CantinaBand3.wav')
+    plt.plot(sample_noise[:1000])
+    plt.show()
+    plt.plot(freqs, abs(np.fft.fft(sample_noise)))
+    plt.show()
+    samples_filtered = ft.low_pass_filter(sample_noise,500,fs)
+    plt.plot(samples_filtered[:1000])
+    plt.show()
+    plt.plot(freqs, abs(np.fft.fft(samples_filtered)))
     plt.show()
     
-    # low_pass_samples = low_pass_filter(samples,10000,fs,True)
-    butter_samples = ft.butterworth(samples,4,0.1)
-    # play(low_pass_samples,fs,True)
-    # play(butter_samples,fs,True)
-    # play(scale_255(f_gen([200,400,2000,2300],22050)),22050)
+    
+    
