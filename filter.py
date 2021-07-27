@@ -50,6 +50,7 @@ def filter_finder(fs):
 
 
 def filter_runner(samples,filter_num,arg_list):
+    '''this runs the filters based on the number'''
     if(filter_num == 1):
         return low_pass_filter(samples,arg_list[0],arg_list[1])
     if(filter_num == 2):
@@ -65,6 +66,7 @@ def filter_runner(samples,filter_num,arg_list):
 
 
 def low_pass_filter(samples,fc,fs,plot_g = False):
+    '''This runs a low pass filter based on cutoff frequency fc'''
     freqs = np.fft.fftfreq(n=len(samples),d = 1/(fs))
 
     samples_fft = np.fft.fft(samples)
@@ -84,6 +86,8 @@ def low_pass_filter(samples,fc,fs,plot_g = False):
         plt.show()
     return np.fft.ifft(low_pass_samples_fft).real
 def high_pass_filter(samples,fc,fs,plot_g = False):
+    '''This runs a highpass filter based on cutoff frequency fc'''
+
     freqs = np.fft.fftfreq(n=len(samples),d = 1/(fs))
 
     samples_fft = np.fft.fft(samples)
@@ -105,6 +109,7 @@ def high_pass_filter(samples,fc,fs,plot_g = False):
 
 
 def genfilter(samples,zeros,poles,plot_g=False):
+    '''This runs the pole-zero filter'''
     zb = Symbol('z')
     whole_b =1
     for root in zeros:
@@ -126,6 +131,7 @@ def evalHz(Hz,w):
     func = lambdify(z,Hz,'numpy')
     return func(np.exp(-1*1j*w))
 def signal_filter(samples,b,a):
+    '''This is generic implementation of lfilter using fft'''
     whole_b =0
     for i in range(0,len(b)):
         whole_b += (z**i)*b[i]

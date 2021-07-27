@@ -6,7 +6,7 @@ import freq_gen as fg
 import filter as ft
 
 def live_run(seconds,save_file = False):
-    
+    '''this is main function to run the live filter'''
     sample_format = pyaudio.paInt16 
     chanels = 1
     fs = 22050*2
@@ -71,5 +71,4 @@ def live_run(seconds,save_file = False):
 
 save_file = False
 save_file = input('Enter "yes" to save the recording and filtered recording or "no" to run a live filter\n') == 'yes'
-print(save_file)
 live_run(10,save_file)

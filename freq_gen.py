@@ -5,7 +5,7 @@ import math
 import wave
 import filter as ft
 import matplotlib.pyplot as plt
-
+'''this file contains basic utilities'''
 def scale_255(samples):
     samples = samples.astype(np.int16)
     if(np.min(samples) < 0):
