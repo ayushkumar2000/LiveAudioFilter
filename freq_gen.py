@@ -87,7 +87,6 @@ def file_samples(filename):
 
 
 
-
 if(__name__ == "__main__"):
     fs = 22050
     freqs = np.fft.fftfreq(n=len(f_gen([200,400,2000,2300],fs)),d = 1/(fs))
