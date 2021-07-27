@@ -5,7 +5,6 @@ import math
 import wave
 import filter as ft
 import matplotlib.pyplot as plt
-from scipy.io import wavfile as wav
 
 def scale_255(samples):
     samples = samples.astype(np.int16)
